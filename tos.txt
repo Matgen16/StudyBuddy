@@ -1,0 +1,97 @@
+StudyBuddy
+Version 1.2.0
+Last Updated: February 25, 2026
+
+Developed by: Matthew Gentle and Ryan Parker
+
+────────────────────────────────────────
+1. ACCEPTANCE OF TERMS
+────────────────────────────────────────
+By installing, accessing, or using Voice Recorder ("the Application"), you agree to these Terms of Service. 
+If you do not agree, do not use the Application.
+
+────────────────────────────────────────
+2. ABOUT THE APPLICATION
+────────────────────────────────────────
+Voice Recorder is a desktop application that allows you to:
+- Record audio from your microphone
+- Transcribe speech locally using the Vosk engine
+- Save audio recordings as WAV files
+- Display live transcription during recording (optional)
+
+The Application runs entirely on your device unless you modify it.
+
+────────────────────────────────────────
+3. USER RESPONSIBILITIES
+────────────────────────────────────────
+You are solely responsible for:
+- Ensuring you have legal permission to record audio
+- Following all local, state, and federal laws regarding recording and consent
+- The content of any recordings or transcriptions
+
+The developers are not responsible for misuse of the Application.
+
+────────────────────────────────────────
+4. PRIVACY
+────────────────────────────────────────
+- All audio recordings and transcriptions are processed and stored locally.
+- The Application does not send data to external servers.
+
+However, the developers are not responsible for:
+- Security of your device or operating system
+- Malware or unauthorized access
+- Any modifications made to the Application by users
+
+You are responsible for securing your own device and files.
+
+────────────────────────────────────────
+5. THIRD-PARTY SOFTWARE
+────────────────────────────────────────
+This Application uses third-party software, including:
+- Vosk
+- PyAudio
+- Python
+
+Use of these components is governed by their own licenses and terms.
+
+────────────────────────────────────────
+6. NO WARRANTY
+────────────────────────────────────────
+The Application is provided "AS IS" and "AS AVAILABLE", without any warranties, including:
+- Accuracy of transcription
+- Reliability of recordings
+- Fitness for a particular purpose
+- Non-infringement
+
+The developers do not guarantee error-free or uninterrupted operation.
+
+────────────────────────────────────────
+7. LIMITATION OF LIABILITY
+────────────────────────────────────────
+To the fullest extent allowed by law, the developers are not liable for:
+- Loss of recordings or data
+- Inaccurate transcriptions
+- Indirect, incidental, or consequential damages
+- Legal consequences from improper recording
+
+Use the Application at your own risk.
+
+────────────────────────────────────────
+8. MODIFICATIONS
+────────────────────────────────────────
+The developers may update these Terms at any time. Continued use of the Application constitutes acceptance of any changes.
+
+────────────────────────────────────────
+9. TERMINATION
+────────────────────────────────────────
+You may stop using the Application at any time by uninstalling it. 
+These Terms remain effective for prior use.
+
+────────────────────────────────────────
+10. CONTACT
+────────────────────────────────────────
+For questions regarding these Terms, contact the developers if contact information is provided with your distribution.
+
+────────────────────────────────────────
+End of Terms of Service
+────────────────────────────────────────
