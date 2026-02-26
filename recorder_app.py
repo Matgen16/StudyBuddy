@@ -20,7 +20,7 @@ Vosk model (download once, place folder next to this script):
 
 VERSION_MAJOR    = 1
 VERSION_MINOR    = 3
-VERSION_REVISION = 0
+VERSION_REVISION = 4
 VERSION_STRING   = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_REVISION}"
 
 APP_NAME   = "Voice Recorder"
@@ -360,10 +360,13 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title(APP_NAME)
-        self.geometry("900x540")
-        self.minsize(700, 420)
-        self.resizable(True, True)
-
+        self.geometry("480x320")
+        self.minsize(480, 320)
+        self.maxsize(480, 320)
+        self.attributes('-fullscreen',True)
+        self.resizable(False, False)
+        self.config(cursor="none")
+                
         self.theme              = "dark"
         self.language           = tk.StringVar(value="English (US)")
         self.live_transcription = tk.BooleanVar(value=True)
@@ -410,7 +413,7 @@ class App(tk.Tk):
                     "Material Icons Round","Segoe MDL2 Assets")
         self._sym = sym
         self.F = {
-            "clock":   (body, 36),
+            "clock":   (body, 15),
             "date":    (body, 15),
             "title":   (body, 20, "bold"),
             "body":    (body, 13),
@@ -418,7 +421,7 @@ class App(tk.Tk):
             "small":   (body, 11),
             "tiny":    (body, 9),
             "section": (body, 9, "bold"),
-            "btn":     (body, 14, "bold"),
+            "btn":     (body, 10, "bold"),
             "trans":   (body, 12),
             "ix":      (sym, 40),
             "il":      (sym, 24),
@@ -523,11 +526,11 @@ class App(tk.Tk):
         cv.create_oval(pad-4, pad-4, sz-pad+4, sz-pad+4,
                         fill="", outline=glow, width=6)
         cv.create_oval(pad, pad, sz-pad, sz-pad, fill=c["accent"], outline="")
-        cv.create_text(sz//2, sz//2 - 16, text=get_icon("mic"),
+        cv.create_text(sz//2, sz//2, text=get_icon("mic"),
                         font=self.F["ix"], fill="white")
-        cv.create_text(sz//2, sz//2 + 46, text="Start Recording",
+        '''        cv.create_text(sz//2, sz//2 + 46, text="Start Recording",
                         font=self.F["btn"], fill="white")
-
+        '''
     # ── Recording screen ──────────────────────────────────────────────────────
     def _start_recording(self):
         # Reset transcript state
