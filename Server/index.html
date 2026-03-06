@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'IntervalSansPro';
+            src: url('./interval_bold_italic.otf') format('opentype'), local('Interval Sans Pro Bold Italic');
+            font-weight: 700;
+            font-style: italic
+        }
+
+        :root {
+            --bg: #0a0a0c;
+            --bg2: #111114;
+            --bg3: #18181c;
+            --border: #252529;
+            --border2: #343439;
+            --fg: #eaeaf0;
+            --fg2: #7a7a96;
+            --fg3: #3c3c52;
+            --amber: #f0a500;
+            --amber2: #c47e00;
+            --amber-bg: rgba(240, 165, 0, 0.08);
+            --green: #27c97a;
+            --green-bg: rgba(39, 201, 122, 0.13);
+            --red: #e8403a;
+            --red-bg: rgba(232, 64, 58, 0.13);
+            --blue: #6ab0f5;
+            --blue-bg: rgba(106, 176, 245, 0.13);
+            --yellow: #f5d76e;
+            --yellow-bg: rgba(245, 215, 110, 0.13);
+            --mono: 'IBM Plex Mono', monospace;
+            --sans: 'IBM Plex Sans', sans-serif;
+            --logo-font: 'IntervalSansPro', 'Georgia', 'Times New Roman', serif;
+            --topbar-h: 52px;
+            --nav-h: 44px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--sans);
+            font-size: 14px;
+            min-height: 100vh;
+            overflow: hidden
+        }
+
+        ::-webkit-scrollbar {
+            width: 3px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 2px
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: var(--topbar-h) var(--nav-h) 1fr;
+            height: 100vh
+        }
+
+        /* TOPBAR */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 22px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            z-index: 200
+        }
+
+        .logo {
+            font-family: var(--logo-font);
+            font-weight: 700;
+            font-style: italic;
+            font-size: 20px;
+            letter-spacing: -0.01em;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 3px
+        }
+
+        .logo-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--amber);
+            margin-right: 8px;
+            flex-shrink: 0;
+            animation: pulse 2.4s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(240, 165, 0, 0.5)
+            }
+
+            50% {
+                opacity: .7;
+                box-shadow: 0 0 0 5px rgba(240, 165, 0, 0)
+            }
+        }
+
+        .logo-study {
+            color: #fff
+        }
+
+        .logo-buddy {
+            color: var(--red)
+        }
+
+        .status-pill {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 3px 9px;
+            border: 1px solid var(--border2);
+            color: var(--fg2);
+            display: flex;
+            align-items: center;
+            gap: 5px
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--fg3);
+            flex-shrink: 0
+        }
+
+        .status-dot.ok {
+            background: var(--green)
+        }
+
+        /* PAGE NAV */
+        .page-nav {
+            display: flex;
+            align-items: stretch;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            padding: 0 22px;
+            z-index: 100
+        }
+
+        .page-nav-tab {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0 20px;
+            color: var(--fg3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            transition: color .15s, border-color .15s;
+            user-select: none
+        }
+
+        .page-nav-tab:hover {
+            color: var(--fg2)
+        }
+
+        .page-nav-tab.active {
+            color: var(--amber);
+            border-bottom-color: var(--amber)
+        }
+
+        /* PAGES */
+        .page {
+            display: none;
+            height: 100%;
+            overflow: hidden
+        }
+
+        .page.active {
+            display: block
+        }
+
+        .recordings-page.active {
+            display: grid !important;
+            grid-template-columns: 264px 1fr;
+            width: 100%;
+            height: 100%
+        }
+
+        .schedule-page.active {
+            display: flex !important;
+            flex-direction: column;
+            width: 100%;
+            height: 100%
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%
+        }
+
+        .sidebar-day-nav {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            gap: 6px;
+            flex-shrink: 0
+        }
+
+        .day-nav-btn {
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--fg2);
+            cursor: pointer;
+            font-size: 13px;
+            transition: background .1s, color .1s;
+            flex-shrink: 0;
+            user-select: none
+        }
+
+        .day-nav-btn:hover {
+            background: var(--border);
+            color: var(--fg)
+        }
+
+        .day-nav-label {
+            flex: 1;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--fg);
+            letter-spacing: .04em;
+            cursor: pointer;
+            line-height: 1.3
+        }
+
+        .day-nav-label:hover {
+            color: var(--amber)
+        }
+
+        .day-nav-today {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border: 1px solid var(--amber2);
+            cursor: pointer;
+            user-select: none;
+            flex-shrink: 0
+        }
+
+        .day-nav-today:hover {
+            background: var(--amber-bg)
+        }
+
+        .rec-list {
+            flex: 1;
+            overflow-y: auto
+        }
+
+        .rec-item {
+            padding: 9px 14px 9px 11px;
+            border-left: 3px solid transparent;
+            transition: background .1s, border-color .1s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer
+        }
+
+        .rec-item:hover {
+            background: var(--bg3)
+        }
+
+        .rec-item.active {
+            background: var(--amber-bg);
+            border-left-color: var(--amber)
+        }
+
+        .rec-item-body {
+            flex: 1;
+            min-width: 0
+        }
+
+        .rec-item-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--fg);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 3px
+        }
+
+        .rec-item-meta {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--fg3);
+            display: flex;
+            gap: 6px;
+            align-items: center
+        }
+
+        .rec-item-status {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 600;
+            padding: 1px 4px;
+            text-transform: uppercase;
+            letter-spacing: .08em
+        }
+
+        .status-transcribing {
+            background: rgba(61, 142, 245, .15);
+            color: var(--blue)
+        }
+
+        .status-analysing {
+            background: rgba(240, 165, 0, .15);
+            color: var(--amber)
+        }
+
+        .status-done {
+            background: rgba(39, 201, 122, .1);
+            color: var(--green)
+        }
+
+        .rec-menu-btn {
+            flex-shrink: 0;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--fg3);
+            font-size: 15px;
+            opacity: 0;
+            transition: opacity .15s, background .1s;
+            cursor: pointer;
+            user-select: none
+        }
+
+        .rec-item:hover .rec-menu-btn {
+            opacity: 1
+        }
+
+        .rec-menu-btn:hover {
+            background: var(--border2);
+            color: var(--fg)
+        }
+
+        .sidebar-empty {
+            padding: 32px 16px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--fg3);
+            line-height: 1.8
+        }
+
+        .empty-icon {
+            font-size: 22px;
+            margin-bottom: 8px;
+            opacity: .28
+        }
+
+        /* MAIN PANEL */
+        .panel {
+            overflow-y: auto;
+            padding: 28px 32px;
+            background: var(--bg);
+            height: 100%
+        }
+
+        .panel-tabs {
+            display: flex;
+            margin-bottom: 26px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .tab {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 7px 16px;
+            cursor: pointer;
+            color: var(--fg3);
+            border-bottom: 2px solid transparent;
+            transition: color .15s, border-color .15s;
+            margin-bottom: -1px;
+            letter-spacing: .1em;
+            text-transform: uppercase
+        }
+
+        .tab:hover {
+            color: var(--fg2)
+        }
+
+        .tab.active {
+            color: var(--amber);
+            border-bottom-color: var(--amber)
+        }
+
+        .notes-header {
+            margin-bottom: 20px
+        }
+
+        .notes-subject {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--amber);
+            text-transform: uppercase;
+            letter-spacing: .14em;
+            margin-bottom: 5px
+        }
+
+        .notes-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 6px;
+            line-height: 1.3
+        }
+
+        .notes-meta {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--fg3)
+        }
+
+        .notes-summary {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--amber);
+            padding: 14px 16px;
+            margin-bottom: 22px;
+            font-size: 13px;
+            line-height: 1.75;
+            color: var(--fg2)
+        }
+
+        .notes-section {
+            margin-bottom: 22px
+        }
+
+        .notes-section-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--fg3);
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .notes-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border)
+        }
+
+        .note-block {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            margin-bottom: 7px
+        }
+
+        .note-block-heading {
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--fg);
+            margin-bottom: 5px
+        }
+
+        .note-block-content {
+            font-size: 12px;
+            line-height: 1.75;
+            color: var(--fg2)
+        }
+
+        .key-terms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px
+        }
+
+        .term-tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            padding: 2px 7px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            color: var(--fg2)
+        }
+
+        .action-list {
+            list-style: none
+        }
+
+        .action-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--fg2)
+        }
+
+        .action-item::before {
+            content: '>';
+            color: var(--amber);
+            font-family: var(--mono);
+            flex-shrink: 0;
+            margin-top: 1px
+        }
+
+        .transcript-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px
+        }
+
+        .transcript-box {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            padding: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            line-height: 1.9;
+            color: var(--fg2);
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 560px;
+            overflow-y: auto
+        }
+
+        .field-textarea {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            padding: 10px 12px;
+            color: var(--fg);
+            font-family: var(--mono);
+            font-size: 11px;
+            line-height: 1.8;
+            outline: none;
+            resize: vertical;
+            min-height: 200px;
+            transition: border-color .15s
+        }
+
+        .field-textarea:focus {
+            border-color: var(--amber2)
+        }
+
+        .welcome-center {
+            max-width: 440px;
+            margin: 70px auto;
+            text-align: center
+        }
+
+        .welcome-bracket {
+            font-family: var(--mono);
+            font-size: 38px;
+            color: var(--fg3);
+            margin-bottom: 14px;
+            letter-spacing: -.05em
+        }
+
+        .welcome-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--fg);
+            margin-bottom: 7px
+        }
+
+        .welcome-sub {
+            font-size: 12px;
+            color: var(--fg2);
+            line-height: 1.75
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border2);
+            border-top-color: var(--amber);
+            animation: spin .7s linear infinite;
+            display: inline-block
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* ════════════════════════════════════════════
+   SCHEDULE PAGE
+════════════════════════════════════════════ */
+        .sched-page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden
+        }
+
+        /* Toolbar */
+        .sched-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            flex-wrap: wrap
+        }
+
+        .sched-week-label {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--fg);
+            min-width: 180px;
+            text-align: center
+        }
+
+        .sched-nav-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            color: var(--fg2);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background .1s, color .1s;
+            user-select: none;
+            flex-shrink: 0
+        }
+
+        .sched-nav-btn:hover {
+            background: var(--border);
+            color: var(--fg)
+        }
+
+        .sched-today-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border: 1px solid var(--amber2);
+            cursor: pointer;
+            background: transparent;
+            transition: background .1s;
+            flex-shrink: 0
+        }
+
+        .sched-today-btn:hover {
+            background: var(--amber-bg)
+        }
+
+        .sched-add-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--fg2);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border: 1px solid var(--border2);
+            cursor: pointer;
+            background: var(--bg3);
+            transition: background .1s, color .1s;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0
+        }
+
+        .sched-add-btn:hover {
+            background: var(--border);
+            color: var(--fg)
+        }
+
+        /* Legend */
+        .sched-legend {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            padding: 8px 20px;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            flex-wrap: wrap
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--fg3);
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0
+        }
+
+        .legend-dot.quiz-test {
+            background: var(--red)
+        }
+
+        .legend-dot.hw-pending {
+            background: var(--blue)
+        }
+
+        .legend-dot.hw-done {
+            background: var(--green)
+        }
+
+        .legend-dot.other {
+            background: var(--yellow)
+        }
+
+        /* Grid */
+        .sched-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border);
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0
+        }
+
+        .sched-day-col {
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            min-height: 120px
+        }
+
+        .sched-day-header {
+            padding: 8px 10px 6px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg2);
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10
+        }
+
+        .sched-day-name {
+            font-family: var(--mono);
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--fg3);
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            margin-bottom: 1px
+        }
+
+        .sched-day-num {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--fg);
+            line-height: 1
+        }
+
+        .sched-day-month {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--fg3);
+            margin-top: 1px
+        }
+
+        .sched-day-col.today-col .sched-day-header {
+            background: var(--amber-bg);
+            border-bottom-color: var(--amber2)
+        }
+
+        .sched-day-col.today-col .sched-day-num {
+            color: var(--amber)
+        }
+
+        .sched-day-col.past-col .sched-day-num,
+        .sched-day-col.past-col .sched-day-name {
+            opacity: .38
+        }
+
+        .sched-day-body {
+            padding: 6px;
+            flex: 1
+        }
+
+        .sched-day-add {
+            width: 100%;
+            padding: 4px;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--fg3);
+            background: transparent;
+            border: 1px dashed var(--border);
+            cursor: pointer;
+            text-align: center;
+            margin-top: 4px;
+            transition: border-color .1s, color .1s;
+            display: none
+        }
+
+        .sched-day-col:hover .sched-day-add {
+            display: block
+        }
+
+        .sched-day-add:hover {
+            border-color: var(--border2);
+            color: var(--fg2)
+        }
+
+        /* Items */
+        .sched-item {
+            padding: 5px 7px;
+            margin-bottom: 4px;
+            border-left: 2px solid var(--border2);
+            font-size: 11px;
+            cursor: pointer;
+            transition: filter .1s;
+            position: relative
+        }
+
+        .sched-item:hover {
+            filter: brightness(1.15)
+        }
+
+        .sched-item:hover .sched-item-del {
+            opacity: 1
+        }
+
+        .sched-item.color-red {
+            background: var(--red-bg);
+            border-left-color: var(--red)
+        }
+
+        .sched-item.color-blue {
+            background: var(--blue-bg);
+            border-left-color: var(--blue)
+        }
+
+        .sched-item.color-green {
+            background: var(--green-bg);
+            border-left-color: var(--green)
+        }
+
+        .sched-item.color-yellow {
+            background: var(--yellow-bg);
+            border-left-color: var(--yellow)
+        }
+
+        .sched-item.completed .sched-item-name {
+            text-decoration: line-through;
+            opacity: .5
+        }
+
+        .sched-item-name {
+            color: var(--fg);
+            font-weight: 500;
+            line-height: 1.3;
+            margin-bottom: 2px
+        }
+
+        .sched-item-meta {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--fg3);
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap
+        }
+
+        .sched-item-del {
+            position: absolute;
+            top: 3px;
+            right: 4px;
+            font-size: 9px;
+            color: var(--fg3);
+            opacity: 0;
+            cursor: pointer;
+            transition: opacity .1s, color .1s;
+            font-family: var(--mono);
+            padding: 1px 3px
+        }
+
+        .sched-item-del:hover {
+            color: var(--red)
+        }
+
+        .type-badge {
+            font-size: 8px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 1px 4px
+        }
+
+        .type-badge.quiz,
+        .type-badge.test,
+        .type-badge.exam {
+            background: rgba(232, 64, 58, .2);
+            color: var(--red)
+        }
+
+        .type-badge.assignment,
+        .type-badge.homework {
+            background: rgba(106, 176, 245, .18);
+            color: var(--blue)
+        }
+
+        .type-badge.class {
+            background: rgba(245, 215, 110, .18);
+            color: var(--yellow)
+        }
+
+        .type-badge.other,
+        .type-badge.meeting,
+        .type-badge.lab {
+            background: rgba(245, 215, 110, .18);
+            color: var(--yellow)
+        }
+
+        /* DROPDOWN */
+        .dropdown {
+            position: fixed;
+            z-index: 500;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            min-width: 158px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, .5)
+        }
+
+        .dropdown-item {
+            padding: 9px 13px;
+            font-size: 12px;
+            color: var(--fg2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            transition: background .1s, color .1s;
+            user-select: none
+        }
+
+        .dropdown-item:hover {
+            background: var(--border);
+            color: var(--fg)
+        }
+
+        .dropdown-item.danger {
+            color: var(--red)
+        }
+
+        .dropdown-item.danger:hover {
+            background: rgba(232, 64, 58, .1)
+        }
+
+        .dropdown-sep {
+            height: 1px;
+            background: var(--border);
+            margin: 3px 0
+        }
+
+        /* MODALS */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .78);
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .modal {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            width: 460px;
+            max-width: 95vw;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, .7)
+        }
+
+        .modal-header {
+            padding: 15px 18px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .modal-title {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--fg);
+            letter-spacing: .1em;
+            text-transform: uppercase
+        }
+
+        .modal-close {
+            cursor: pointer;
+            color: var(--fg3);
+            font-size: 17px;
+            padding: 2px 5px;
+            line-height: 1
+        }
+
+        .modal-close:hover {
+            color: var(--fg)
+        }
+
+        .modal-body {
+            padding: 18px
+        }
+
+        .modal-footer {
+            padding: 12px 18px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px
+        }
+
+        .field-label {
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--fg3);
+            text-transform: uppercase;
+            letter-spacing: .13em;
+            margin-bottom: 6px;
+            display: block
+        }
+
+        .field-input,
+        .field-select {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            padding: 8px 10px;
+            color: var(--fg);
+            font-family: var(--sans);
+            font-size: 13px;
+            outline: none;
+            transition: border-color .15s;
+            margin-bottom: 14px
+        }
+
+        .field-input:focus,
+        .field-select:focus {
+            border-color: var(--amber2)
+        }
+
+        .field-select {
+            cursor: pointer
+        }
+
+        .field-select option {
+            background: var(--bg3)
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .btn-sm {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: 600;
+            padding: 5px 12px;
+            cursor: pointer;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            color: var(--fg2);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            transition: background .1s, color .1s
+        }
+
+        .btn-sm:hover {
+            background: var(--border);
+            color: var(--fg)
+        }
+
+        .btn-sm.primary {
+            background: var(--amber-bg);
+            border-color: var(--amber2);
+            color: var(--amber)
+        }
+
+        .btn-sm.primary:hover {
+            background: rgba(240, 165, 0, .14)
+        }
+
+        .btn-sm.danger {
+            border-color: rgba(232, 64, 58, .35);
+            color: var(--red);
+            background: rgba(232, 64, 58, .05)
+        }
+
+        .btn-sm.danger:hover {
+            background: rgba(232, 64, 58, .12)
+        }
+
+        .empty {
+            padding: 36px 16px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--fg3);
+            line-height: 1.9
+        }
+
+        @media(max-width:960px) {
+            .recordings-page.active {
+                grid-template-columns: 220px 1fr !important
+            }
+
+            .sched-grid {
+                grid-template-columns: repeat(4, 1fr)
+            }
+        }
+
+        @media(max-width:640px) {
+            .recordings-page.active {
+                grid-template-columns: 1fr !important
+            }
+
+            .sidebar {
+                display: none !important
+            }
+
+            .sched-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="logo">
+                <div class="logo-dot" id="statusDot"></div>
+                <span class="logo-study">Study</span><span class="logo-buddy">Buddy</span>
+            </div>
+            <div class="status-pill">
+                <div class="status-dot" id="pillDot"></div>
+                <span id="pillText" style="font-family:var(--mono);font-size:10px">connecting...</span>
+            </div>
+        </header>
+
+        <!-- PAGE NAV -->
+        <nav class="page-nav">
+            <div class="page-nav-tab active" id="navRecordings" onclick="switchPage('recordings')">Recordings</div>
+            <div class="page-nav-tab" id="navSchedule" onclick="switchPage('schedule')">Schedule</div>
+        </nav>
+
+        <!-- ══ RECORDINGS PAGE ══ -->
+        <div class="page recordings-page" id="pageRecordings">
+            <aside class="sidebar">
+                <div class="sidebar-day-nav">
+                    <div class="day-nav-btn" onclick="shiftDay(-1)">&#8592;</div>
+                    <div class="day-nav-label" id="dayLabel" onclick="goToday()"></div>
+                    <div class="day-nav-btn" onclick="shiftDay(1)">&#8594;</div>
+                    <div class="day-nav-today" onclick="goToday()">Today</div>
+                </div>
+                <div class="rec-list" id="recList">
+                    <div class="sidebar-empty">
+                        <div class="empty-icon">&#127908;</div>No recordings yet.
+                    </div>
+                </div>
+            </aside>
+
+            <section class="panel" id="mainPanel">
+                <div id="welcomeView">
+                    <div class="welcome-center">
+                        <div class="welcome-bracket">[ ]</div>
+                        <div class="welcome-title">No recording selected</div>
+                        <div class="welcome-sub">Select a recording from the sidebar to view AI-generated notes,
+                            summaries, and extracted assignments.</div>
+                    </div>
+                </div>
+                <div id="notesView" style="display:none">
+                    <div class="panel-tabs">
+                        <div class="tab active" onclick="showTab('notes')">Notes</div>
+                        <div class="tab" onclick="showTab('transcript')">Transcript</div>
+                    </div>
+                    <div id="tabNotes">
+                        <div class="notes-header">
+                            <div class="notes-subject" id="noteSubject"></div>
+                            <div class="notes-title" id="noteTitle"></div>
+                            <div class="notes-meta" id="noteMeta"></div>
+                        </div>
+                        <div class="notes-summary" id="noteSummary"></div>
+                        <div class="notes-section">
+                            <div class="notes-section-title">Class Notes</div>
+                            <div id="noteBlocks"></div>
+                        </div>
+                        <div class="notes-section">
+                            <div class="notes-section-title">Action Items</div>
+                            <ul class="action-list" id="actionList"></ul>
+                        </div>
+                        <div class="notes-section">
+                            <div class="notes-section-tite">Key Terms</div>
+                            <div class="key-terms" id="keyTerms"></div>
+                        </div>
+                    </div>
+                    <div id="tabTranscript" style="display:none">
+                        <div class="transcript-header">
+                            <div class="notes-section-title" style="margin-bottom:0;flex:1">Full Transcript</div>
+                            <button class="btn-sm" onclick="openEditTranscript()">Edit</button>
+                        </div>
+                        <div class="transcript-box" id="transcriptBox"></div>
+                    </div>
+                </div>
+                <div id="processingView" style="display:none">
+                    <div style="max-width:380px;margin:60px auto;text-align:center">
+                        <div style="margin-bottom:14px">
+                            <div class="spinner" style="margin:0 auto"></div>
+                        </div>
+                        <div style="font-family:var(--mono);font-size:12px;color:var(--amber)" id="processingMsg">
+                            Transcribing...</div>
+                        <div style="font-size:11px;color:var(--fg3);margin-top:7px">This may take a minute on first run
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ══ SCHEDULE PAGE ══ -->
+        <div class="page schedule-page" id="pageSchedule">
+            <div class="sched-page">
+                <div class="sched-toolbar">
+                    <button class="sched-nav-btn" onclick="shiftWeek(-1)">&#8592;</button>
+                    <button class="sched-today-btn" onclick="jumpWeekToday()">Today</button>
+                    <button class="sched-nav-btn" onclick="shiftWeek(1)">&#8594;</button>
+                    <div class="sched-week-label" id="schedWeekLabel"></div>
+                    <button class="sched-add-btn" onclick="openItemModal()">+ Add Item</button>
+                </div>
+                <div class="sched-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot quiz-test"></div>Quiz / Test
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot hw-pending"></div>Homework (pending)
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot hw-done"></div>Homework (done)
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot other"></div>Other
+                    </div>
+                </div>
+                <div class="sched-grid" id="schedGrid"></div>
+            </div>
+        </div>
+
+    </div><!-- .app -->
+
+    <!-- Dropdown -->
+    <div class="dropdown" id="recDropdown" style="display:none">
+        <div class="dropdown-item" onclick="dropdownAction('rename')">&#9998; Rename</div>
+        <div class="dropdown-item" onclick="dropdownAction('editTranscript')">&#8801; Edit Transcript</div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item danger" onclick="dropdownAction('delete')">&#10005; Delete</div>
+    </div>
+
+    <!-- Rename modal -->
+    <div class="modal-backdrop" id="renameModal" style="display:none" onclick="closeModal('renameModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title">Rename Recording</span><span class="modal-close"
+                    onclick="closeModal('renameModal')">&times;</span></div>
+            <div class="modal-body">
+                <label class="field-label">Title</label>
+                <input class="field-input" id="renameInput" type="text" maxlength="120"
+                    onkeydown="if(event.key==='Enter')saveRename()" placeholder="Recording title...">
+            </div>
+            <div class="modal-footer"><button class="btn-sm" onclick="closeModal('renameModal')">Cancel</button><button
+                    class="btn-sm primary" onclick="saveRename()">Save</button></div>
+        </div>
+    </div>
+
+    <!-- Edit transcript modal -->
+    <div class="modal-backdrop" id="transcriptModal" style="display:none" onclick="closeModal('transcriptModal')">
+        <div class="modal" style="width:620px" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title">Edit Transcript</span><span class="modal-close"
+                    onclick="closeModal('transcriptModal')">&times;</span></div>
+            <div class="modal-body">
+                <label class="field-label">Transcript</label>
+                <textarea class="field-textarea" id="transcriptInput"></textarea>
+                <div style="font-family:var(--mono);font-size:9px;color:var(--fg3);margin-top:7px">EDITING DOES NOT
+                    RE-RUN AI ANALYSIS.</div>
+            </div>
+            <div class="modal-footer"><button class="btn-sm"
+                    onclick="closeModal('transcriptModal')">Cancel</button><button class="btn-sm primary"
+                    onclick="saveTranscript()">Save</button></div>
+        </div>
+    </div>
+
+    <!-- Delete recording modal -->
+    <div class="modal-backdrop" id="deleteModal" style="display:none" onclick="closeModal('deleteModal')">
+        <div class="modal" style="width:360px" onclick="event.stopPropagation()">
+            <div class="modal-header"><span class="modal-title">Delete Recording</span><span class="modal-close"
+                    onclick="closeModal('deleteModal')">&times;</span></div>
+            <div class="modal-body">
+                <div style="font-size:13px;color:var(--fg2);line-height:1.7">Delete <strong id="deleteRecName"
+                        style="color:var(--fg)"></strong>?<br><br><span
+                        style="font-family:var(--mono);font-size:10px;color:var(--fg3)">Server record only. WAV on the
+                        Pi is unaffected.</span></div>
+            </div>
+            <div class="modal-footer"><button class="btn-sm" onclick="closeModal('deleteModal')">Cancel</button><button
+                    class="btn-sm danger" onclick="confirmDelete()">Delete</button></div>
+        </div>
+    </div>
+
+    <!-- Add/Edit schedule item modal -->
+    <div class="modal-backdrop" id="itemModal" style="display:none" onclick="closeModal('itemModal')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title" id="itemModalTitle">Add Item</span>
+                <span class="modal-close" onclick="closeModal('itemModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <label class="field-label">Name</label>
+                <input class="field-input" id="itemName" type="text" maxlength="200"
+                    placeholder="e.g. Physics Quiz Ch. 4">
+                <div class="field-row">
+                    <div>
+                        <label class="field-label">Type</label>
+                        <select class="field-select" id="itemType" onchange="updateItemTypeHint()">
+                            <option value="assignment">Homework / Assignment</option>
+                            <option value="quiz">Quiz</option>
+                            <option value="test">Test</option>
+                            <option value="exam">Exam</option>
+                            <option value="class">Class</option>
+                            <option value="lab">Lab</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Date</label>
+                        <input class="field-input" id="itemDate" type="date">
+                    </div>
+                </div>
+                <div class="field-row">
+                    <div>
+                        <label class="field-label">Time (optional)</label>
+                        <input class="field-input" id="itemTime" type="time">
+                    </div>
+                    <div id="priorityGroup">
+                        <label class="field-label">Priority</label>
+                        <select class="field-select" id="itemPriority">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm danger" id="itemDeleteBtn" style="margin-right:auto;display:none"
+                    onclick="deleteCurrentItem()">Delete</button>
+                <button class="btn-sm" onclick="closeModal('itemModal')">Cancel</button>
+                <button class="btn-sm primary" onclick="saveItem()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '';
+        let _recordings = [], _assignments = [], _schedule = [], _selectedId = null, _menuId = null, _pollTimer = null;
+        let _viewDate = todayISO(), _schedWeekOffset = 0;
+
+        // item being edited in modal
+        let _editItem = null; // {source:'assignment'|'schedule', id, dayStr}
+
+        function todayISO() { return isoDate(new Date()) }
+        function isoDate(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+        function parseISO(s) { if (!s || s === 'unspecified') return null; const p = s.split('-').map(Number); return p.length === 3 ? new Date(p[0], p[1] - 1, p[2]) : null }
+        function startOfWeek(d) { const sun = new Date(d); sun.setDate(d.getDate() - d.getDay()); sun.setHours(0, 0, 0, 0); return sun }
+        function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+        function fmtShortDate(d) { return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }
+        function fmtDayName(d) { return d.toLocaleDateString(undefined, { weekday: 'short' }) }
+        function fmtTime(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) } catch { return iso } }
+        function fmtDateTime(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) } catch { return iso } }
+        function fmtDuration(s) { if (!s) return ''; const m = Math.floor(s / 60), sec = s % 60; return m ? m + 'm ' + sec + 's' : sec + 's' }
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+
+        // Color scheme
+        function itemColor(type, completed) {
+            const t = (type || '').toLowerCase();
+            if (t === 'quiz' || t === 'test' || t === 'exam') return 'color-red';
+            if (t === 'assignment' || t === 'homework') { return completed ? 'color-green' : 'color-blue' }
+            return 'color-yellow';
+        }
+
+        async function api(path, opts) { try { const r = await fetch(API + path, opts); if (!r.ok) throw new Error(r.status); return await r.json() } catch (e) { console.error('API', path, e); return null } }
+
+        async function poll() {
+            const status = await api('/api/status');
+            if (status) { document.getElementById('pillDot').className = 'status-dot ok'; document.getElementById('pillText').textContent = 'whisper:' + status.whisper + '  ollama:' + status.ollama; document.getElementById('statusDot').style.animationDuration = status.pending > 0 ? '0.5s' : '2.4s' }
+            else { document.getElementById('pillDot').className = 'status-dot'; document.getElementById('pillText').textContent = 'server offline' }
+            const recs = await api('/api/recordings'); if (recs) { _recordings = recs; renderSidebar() }
+            const assigns = await api('/api/assignments'); if (assigns) { _assignments = assigns }
+            const sched = await api('/api/schedule'); if (sched) { _schedule = sched }
+            if (_selectedId) { const rec = _recordings.find(r => r.id === _selectedId); if (rec) renderMainPanel(rec) }
+            purgeOldItems();
+            renderSchedulePage();
+            const hasPending = _recordings.some(r => r.status !== 'done');
+            clearTimeout(_pollTimer); _pollTimer = setTimeout(poll, hasPending ? 3000 : 10000);
+        }
+
+        function purgeOldItems() {
+            const cutoff = addDays(new Date(), -14); cutoff.setHours(0, 0, 0, 0);
+            _schedule = _schedule.filter(s => { const d = parseISO(s.date); return !d || d >= cutoff });
+            _assignments = _assignments.filter(a => { const d = parseISO(a.due_date); return !d || d >= cutoff });
+        }
+
+        function switchPage(name) {
+            document.getElementById('pageRecordings').classList.toggle('active', name === 'recordings');
+            document.getElementById('pageSchedule').classList.toggle('active', name === 'schedule');
+            document.getElementById('navRecordings').classList.toggle('active', name === 'recordings');
+            document.getElementById('navSchedule').classList.toggle('active', name === 'schedule');
+            if (name === 'schedule') renderSchedulePage();
+        }
+
+        // ── DAY NAV ───────────────────────────────────────────────────────────────────
+        function updateDayLabel() {
+            const d = parseISO(_viewDate) || new Date();
+            document.getElementById('dayLabel').textContent = _viewDate === todayISO() ? 'Today  ' + d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) : d.toLocaleDateString(undefined, { weekday: 'short', month: 'long', day: 'numeric' });
+        }
+        function shiftDay(n) { const d = parseISO(_viewDate) || new Date(); d.setDate(d.getDate() + n); _viewDate = isoDate(d); updateDayLabel(); renderSidebar() }
+        function goToday() { _viewDate = todayISO(); updateDayLabel(); renderSidebar() }
+        function recDate(rec) { if (!rec.created) return null; return rec.created.includes('T') ? rec.created.split('T')[0] : rec.created.split(' ')[0] }
+
+        // ── SIDEBAR ───────────────────────────────────────────────────────────────────
+        function renderSidebar() {
+            updateDayLabel();
+            const el = document.getElementById('recList');
+            const dayRecs = _recordings.filter(r => recDate(r) === _viewDate);
+            if (!dayRecs.length) { const msg = _viewDate === todayISO() ? 'No recordings today.<br>Start recording on the Pi.' : 'No recordings on this day.'; el.innerHTML = '<div class="sidebar-empty"><div class="empty-icon">&#127908;</div>' + msg + '</div>'; return }
+            el.innerHTML = dayRecs.map(r => `<div class="rec-item ${r.id === _selectedId ? 'active' : ''}" onclick="selectRecording('${r.id}')"><div class="rec-item-body"><div class="rec-item-title">${esc(r.title)}</div><div class="rec-item-meta"><span>${fmtTime(r.created)}</span>${r.duration ? '<span>' + fmtDuration(r.duration) + '</span>' : ''}<span class="rec-item-status status-${r.status}">${r.status}</span></div></div><div class="rec-menu-btn" onclick="openMenu(event,'${r.id}')">&#8943;</div></div>`).join('');
+        }
+
+        // ── NOTES PANEL ───────────────────────────────────────────────────────────────
+        function selectRecording(id) { _selectedId = id; renderSidebar(); const rec = _recordings.find(r => r.id === id); if (rec) renderMainPanel(rec) }
+
+        function renderMainPanel(rec) {
+            document.getElementById('welcomeView').style.display = 'none';
+            const nv = document.getElementById('notesView'), pv = document.getElementById('processingView');
+            if (rec.status === 'transcribing') { nv.style.display = 'none'; pv.style.display = 'block'; document.getElementById('processingMsg').textContent = 'Transcribing audio with Whisper...'; return }
+            if (rec.status === 'analysing') { nv.style.display = 'none'; pv.style.display = 'block'; document.getElementById('processingMsg').textContent = 'Analysing with AI (Ollama)...'; return }
+            pv.style.display = 'none'; nv.style.display = 'block';
+            document.getElementById('noteSubject').textContent = rec.subject || '';
+            document.getElementById('noteTitle').textContent = rec.title || '';
+            document.getElementById('noteMeta').textContent = fmtDateTime(rec.created) + '  ' + fmtDuration(rec.duration);
+            document.getElementById('noteSummary').textContent = rec.summary || 'No summary generated.';
+            document.getElementById('noteBlocks').innerHTML = (rec.notes || []).map(n => '<div class="note-block"><div class="note-block-heading">' + esc(n.heading) + '</div><div class="note-block-content">' + esc(n.content) + '</div></div>').join('') || '<div style="color:var(--fg3);font-size:12px;padding:6px 0">No notes extracted.</div>';
+            document.getElementById('actionList').innerHTML = (rec.action_items || []).map(a => '<li class="action-item">' + esc(a) + '</li>').join('') || '<li class="action-item" style="color:var(--fg3)">No action items.</li>';
+            document.getElementById('keyTerms').innerHTML = (rec.key_terms || []).map(t => '<span class="term-tag">' + esc(t) + '</span>').join('') || '<span style="color:var(--fg3);font-size:11px">None identified.</span>';
+            document.getElementById('transcriptBox').textContent = rec.transcript || '[No transcript available]';
+        }
+
+        function showTab(name) {
+            document.getElementById('tabNotes').style.display = name === 'notes' ? '' : 'none';
+            document.getElementById('tabTranscript').style.display = name === 'transcript' ? '' : 'none';
+            document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && name === 'notes') || (i === 1 && name === 'transcript')));
+        }
+
+        // ── SCHEDULE PAGE ─────────────────────────────────────────────────────────────
+        function shiftWeek(n) { _schedWeekOffset = Math.max(-2, Math.min(4, _schedWeekOffset + n)); renderSchedulePage() }
+        function jumpWeekToday() { _schedWeekOffset = 0; renderSchedulePage() }
+
+        function renderSchedulePage() {
+            const grid = document.getElementById('schedGrid'); if (!grid) return;
+            const today = new Date(); today.setHours(0, 0, 0, 0); const todayStr = isoDate(today);
+            const weekStart = addDays(startOfWeek(today), _schedWeekOffset * 7);
+            const weekEnd = addDays(weekStart, 6);
+            document.getElementById('schedWeekLabel').textContent = fmtShortDate(weekStart) + ' \u2013 ' + fmtShortDate(weekEnd);
+            const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+            function itemsForDay(dayStr) {
+                const items = [];
+                _schedule.forEach(s => {
+                    const d = parseISO(s.date); if (!d || isoDate(d) !== dayStr) return;
+                    items.push({ id: s.id, source: 'schedule', name: s.event, time: s.time && s.time !== 'unspecified' ? s.time : null, type: s.type || 'other', completed: false, priority: null });
+                });
+                _assignments.forEach(a => {
+                    const d = parseISO(a.due_date); if (!d || isoDate(d) !== dayStr) return;
+                    items.push({ id: a.id, source: 'assignment', name: a.task, time: null, type: a.type || 'assignment', completed: a.completed, priority: a.priority });
+                });
+                items.sort((a, b) => { if (a.time && !b.time) return -1; if (!a.time && b.time) return 1; if (a.time && b.time) return a.time.localeCompare(b.time); return 0 });
+                return items;
+            }
+
+            grid.innerHTML = days.map(day => {
+                const dayStr = isoDate(day), isToday = dayStr === todayStr, isPast = day < today;
+                const items = itemsForDay(dayStr);
+                const colClass = isToday ? 'today-col' : isPast ? 'past-col' : '';
+                const itemsHTML = items.map(item => {
+                    const color = itemColor(item.type, item.completed);
+                    const t = item.type || 'other';
+                    return `<div class="sched-item ${color} ${item.completed ? 'completed' : ''}" onclick="editItem('${item.source}','${item.id}','${dayStr}')">
+        <div class="sched-item-del" onclick="event.stopPropagation();quickDelete('${item.source}','${item.id}')">&#10005;</div>
+        <div class="sched-item-name">${esc(item.name)}</div>
+        <div class="sched-item-meta">
+          ${item.time ? '<span>' + esc(item.time) + '</span>' : ''}
+          <span class="type-badge ${t}">${t}</span>
+          ${item.source === 'assignment' ? '<span onclick="event.stopPropagation();toggleDone(\'' + item.id + '\')" style="cursor:pointer;text-decoration:underline;color:var(--fg3)">' + (item.completed ? 'undo' : 'done') + '</span>' : ''}
+        </div>
+      </div>`;
+                }).join('');
+                return `<div class="sched-day-col ${colClass}">
+      <div class="sched-day-header">
+        <div class="sched-day-name">${fmtDayName(day)}</div>
+        <div class="sched-day-num">${day.getDate()}</div>
+        <div class="sched-day-month">${day.toLocaleDateString(undefined, { month: 'short' })}</div>
+      </div>
+      <div class="sched-day-body">
+        ${itemsHTML}
+        <button class="sched-day-add" onclick="openItemModal('${dayStr}')">+ add</button>
+      </div>
+    </div>`;
+            }).join('');
+        }
+
+        // ── ITEM MODAL ────────────────────────────────────────────────────────────────
+        function openItemModal(dayStr) {
+            _editItem = null;
+            document.getElementById('itemModalTitle').textContent = 'Add Item';
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemType').value = 'assignment';
+            document.getElementById('itemDate').value = dayStr || todayISO();
+            document.getElementById('itemTime').value = '';
+            document.getElementById('itemPriority').value = 'medium';
+            document.getElementById('itemDeleteBtn').style.display = 'none';
+            document.getElementById('priorityGroup').style.display = '';
+            document.getElementById('itemModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('itemName').focus(), 50);
+        }
+
+        function editItem(source, id, dayStr) {
+            let obj = null;
+            if (source === 'assignment') obj = _assignments.find(a => a.id === id);
+            else obj = _schedule.find(s => s.id === id);
+            if (!obj) return;
+            _editItem = { source, id, dayStr };
+            document.getElementById('itemModalTitle').textContent = 'Edit Item';
+            document.getElementById('itemName').value = source === 'assignment' ? obj.task : obj.event;
+            document.getElementById('itemType').value = obj.type || 'assignment';
+            document.getElementById('itemDate').value = source === 'assignment' ? (obj.due_date || '') : (obj.date || '');
+            document.getElementById('itemTime').value = (obj.time && obj.time !== 'unspecified') ? obj.time : '';
+            document.getElementById('itemPriority').value = obj.priority || 'medium';
+            document.getElementById('itemDeleteBtn').style.display = '';
+            document.getElementById('priorityGroup').style.display = source === 'assignment' ? '' : 'none';
+            document.getElementById('itemModal').style.display = 'flex';
+        }
+
+        function updateItemTypeHint() {
+            const t = document.getElementById('itemType').value;
+            const isAssign = t === 'assignment' || t === 'homework';
+            document.getElementById('priorityGroup').style.display = isAssign ? '' : 'none';
+        }
+
+        async function saveItem() {
+            const name = document.getElementById('itemName').value.trim();
+            if (!name) return;
+            const type = document.getElementById('itemType').value;
+            const date = document.getElementById('itemDate').value || 'unspecified';
+            const timeVal = document.getElementById('itemTime').value;
+            const time = timeVal || 'unspecified';
+            const priority = document.getElementById('itemPriority').value;
+            const isAssign = type === 'assignment' || type === 'homework' || type === 'quiz' || type === 'test' || type === 'exam';
+
+            closeModal('itemModal');
+
+            if (_editItem) {
+                // Update existing
+                if (_editItem.source === 'assignment') {
+                    const updated = await api('/api/assignments/' + _editItem.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: name, due_date: date, type, priority }) });
+                    if (updated) { const idx = _assignments.findIndex(a => a.id === _editItem.id); if (idx !== -1) _assignments[idx] = updated }
+                } else {
+                    const updated = await api('/api/schedule/' + _editItem.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: name, date, time, type }) });
+                    if (updated) { const idx = _schedule.findIndex(s => s.id === _editItem.id); if (idx !== -1) _schedule[idx] = updated }
+                }
+            } else {
+                // Create new - quizzes/tests/exams go to schedule (they have a date/time but no completion)
+                // assignments (homework) go to assignments
+                if (type === 'assignment' || type === 'homework') {
+                    const created = await api('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task: name, due_date: date, type: 'assignment', priority }) });
+                    if (created) _assignments.push(created);
+                } else {
+                    const created = await api('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: name, date, time, type }) });
+                    if (created) _schedule.push(created);
+                }
+            }
+            renderSchedulePage();
+        }
+
+        async function deleteCurrentItem() {
+            if (!_editItem) return;
+            closeModal('itemModal');
+            await quickDelete(_editItem.source, _editItem.id);
+        }
+
+        async function quickDelete(source, id) {
+            if (source === 'assignment') {
+                await api('/api/assignments/' + id, { method: 'DELETE' });
+                _assignments = _assignments.filter(a => a.id !== id);
+            } else {
+                await api('/api/schedule/' + id, { method: 'DELETE' });
+                _schedule = _schedule.filter(s => s.id !== id);
+            }
+            renderSchedulePage();
+        }
+
+        async function toggleDone(id) {
+            const res = await api('/api/assignments/' + id + '/complete', { method: 'POST' });
+            if (res) { const a = _assignments.find(x => x.id === id); if (a) a.completed = res.completed }
+            renderSchedulePage();
+        }
+
+        // ── DROPDOWN ──────────────────────────────────────────────────────────────────
+        function openMenu(e, id) { e.stopPropagation(); _menuId = id; const dd = document.getElementById('recDropdown'); dd.style.display = 'block'; const rect = e.currentTarget.getBoundingClientRect(); let top = rect.bottom + 4, left = rect.right - 160; if (left < 4) left = 4; if (top + 120 > window.innerHeight) top = rect.top - 124; dd.style.top = top + 'px'; dd.style.left = left + 'px' }
+        function closeDropdown() { document.getElementById('recDropdown').style.display = 'none'; _menuId = null }
+        document.addEventListener('click', closeDropdown);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeDropdown(); closeAllModals() } });
+        function dropdownAction(action) { const id = _menuId, rec = _recordings.find(r => r.id === id); closeDropdown(); if (!rec) return; if (action === 'rename') openRename(rec); if (action === 'editTranscript') openEditTranscriptFor(rec); if (action === 'delete') openDelete(rec) }
+
+        // ── MODALS ────────────────────────────────────────────────────────────────────
+        function closeModal(id) { document.getElementById(id).style.display = 'none' }
+        function closeAllModals() { ['renameModal', 'transcriptModal', 'deleteModal', 'itemModal'].forEach(closeModal) }
+
+        let _renameId = null;
+        function openRename(rec) { _renameId = rec.id; document.getElementById('renameInput').value = rec.title || ''; document.getElementById('renameModal').style.display = 'flex'; setTimeout(() => { const i = document.getElementById('renameInput'); i.focus(); i.select() }, 50) }
+        async function saveRename() { const title = document.getElementById('renameInput').value.trim(); if (!title || !_renameId) return; closeModal('renameModal'); const updated = await api('/api/recordings/' + _renameId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title }) }); if (updated) { const idx = _recordings.findIndex(r => r.id === _renameId); if (idx !== -1) _recordings[idx] = updated; renderSidebar(); if (_selectedId === _renameId) renderMainPanel(updated) } }
+
+        let _editTranscriptId = null;
+        function openEditTranscript() { const rec = _recordings.find(r => r.id === _selectedId); if (rec) openEditTranscriptFor(rec) }
+        function openEditTranscriptFor(rec) { _editTranscriptId = rec.id; document.getElementById('transcriptInput').value = rec.transcript || ''; document.getElementById('transcriptModal').style.display = 'flex'; setTimeout(() => document.getElementById('transcriptInput').focus(), 50) }
+        async function saveTranscript() { const transcript = document.getElementById('transcriptInput').value; if (!_editTranscriptId) return; closeModal('transcriptModal'); const updated = await api('/api/recordings/' + _editTranscriptId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript }) }); if (updated) { const idx = _recordings.findIndex(r => r.id === _editTranscriptId); if (idx !== -1) _recordings[idx] = updated; renderSidebar(); if (_selectedId === _editTranscriptId) renderMainPanel(updated) } }
+
+        let _deleteId = null;
+        function openDelete(rec) { _deleteId = rec.id; document.getElementById('deleteRecName').textContent = rec.title || rec.id.slice(0, 8); document.getElementById('deleteModal').style.display = 'flex' }
+        async function confirmDelete() { if (!_deleteId) return; closeModal('deleteModal'); await api('/api/recordings/' + _deleteId, { method: 'DELETE' }); if (_selectedId === _deleteId) { _selectedId = null;['notesView', 'processingView'].forEach(id => document.getElementById(id).style.display = 'none'); document.getElementById('welcomeView').style.display = '' } _recordings = _recordings.filter(r => r.id !== _deleteId); renderSidebar() }
+
+        // ── BOOT ──────────────────────────────────────────────────────────────────────
+        goToday();
+        switchPage('recordings');
+        poll();
+    </script>
+</body>
+
+</html>

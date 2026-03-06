@@ -1,0 +1,81 @@
+TERMS OF SERVICE
+StudyBuddy Voice Recorder
+Last updated: March 2026
+────────────────────────────────────────
+
+1. ACCEPTANCE OF TERMS
+
+By using StudyBuddy, you agree to these Terms of Service. If you do not agree, do not use this application. These terms apply to all students and users of the app.
+
+
+2. WHO CAN USE THIS APP
+
+StudyBuddy is intended for use by students at accredited schools and universities for personal academic purposes. You must be enrolled at an educational institution to use this app. Use by individuals outside of an educational context is not supported.
+
+
+3. HOW YOU MAY USE THIS APP
+
+You may use StudyBuddy to record lectures and personal voice memos for your own academic study. You may not:
+
+  - Record individuals without their knowledge or consent
+  - Use recordings for commercial purposes
+  - Distribute, sell, or share recordings of other people without permission
+  - Attempt to reverse-engineer, modify, or tamper with the app or its server
+  - Use the app in any way that violates your school or university's code of conduct
+
+
+4. RECORDING CONSENT
+
+It is your responsibility to ensure you have permission to record in any setting. Many institutions and jurisdictions require the consent of all parties being recorded. StudyBuddy does not verify consent on your behalf. You assume full responsibility for complying with applicable recording laws and your institution's policies.
+
+
+5. DATA & PRIVACY
+
+When you submit a recording, the audio file is transmitted over your local network to a private server operated by the app administrator. On that server:
+
+  - Your audio is transcribed using Whisper (a local AI model)
+  - The transcript is analysed using a local language model (Ollama)
+  - Resulting notes, summaries, and transcripts are stored on the server
+
+Your recordings and transcripts are not shared with any third-party services, cloud providers, or external parties. All processing happens on the administrator's private server. No data is sold or disclosed to outside organisations.
+
+You should be aware that recordings stored on the server may be accessible to the server administrator. Do not record sensitive personal conversations or confidential information.
+
+
+6. DATA RETENTION
+
+Recordings and transcripts are stored on the server until manually deleted. You are responsible for deleting your own recordings when they are no longer needed. The app administrator reserves the right to delete recordings at any time for maintenance or storage reasons.
+
+
+7. DISCLAIMER OF WARRANTIES
+
+StudyBuddy is provided "as is" without warranty of any kind. We do not guarantee that:
+
+  - The app will be available at all times
+  - Transcriptions or AI-generated notes will be accurate
+  - Data stored on the server will never be lost
+
+AI-generated summaries and notes are provided as study aids only and may contain errors. Always verify important information against your original source material.
+
+
+8. LIMITATION OF LIABILITY
+
+To the fullest extent permitted by law, the developers and administrators of StudyBuddy are not liable for any loss of data, academic harm, or damages arising from your use of this application. Use of AI-generated notes for academic submissions is entirely at your own risk and subject to your institution's academic integrity policies.
+
+
+9. ACADEMIC INTEGRITY
+
+AI-generated notes and summaries produced by this app are tools to assist your studying. Submitting AI-generated content as your own academic work may violate your institution's academic integrity policies. You are solely responsible for how you use the output of this app.
+
+
+10. CHANGES TO THESE TERMS
+
+These terms may be updated from time to time. Continued use of the app after changes are posted constitutes acceptance of the revised terms.
+
+
+11. CONTACT
+
+If you have questions about these terms or how your data is handled, contact the app administrator directly.
+
+────────────────────────────────────────
+© 2026 StudyBuddy. All rights reserved.
