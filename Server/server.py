@@ -283,8 +283,6 @@ def _chunk_transcript(text: str):
     chunks, step = [], CHUNK_SIZE - 200
     for i in range(0, len(text), step):
         chunks.append(text[i : i + CHUNK_SIZE])
-        if i + CHUNK_SIZE >= len(text):
-            break
     return chunks
 
 
@@ -353,10 +351,10 @@ def _parse_meta(raw: str) -> dict:
         elif su.startswith("SUMMARY:") or su.startswith("SUMMARY "):
             flush(); current = "summary"
             buf = [s.split(":", 1)[-1].strip() if ":" in s else ""]
-        elif "KEY TERM" in su:
+        elif su.startswith("KEY TERM"):
             flush(); current = "terms"
             buf = [s.split(":", 1)[-1].strip() if ":" in s else ""]
-        elif "ACTION" in su:
+        elif su.startswith("ACTION"):
             flush(); current = "actions"
             buf = [s.split(":", 1)[-1].strip() if ":" in s else ""]
         elif current and s:
@@ -417,21 +415,29 @@ def _parse_assignments(raw: str, today: str) -> tuple:
         s = line.strip()
         if not s or s.upper() == "NONE" or s.startswith("{"):
             continue
+
+        # Strip common list prefixes before parsing pipes
         if s.upper().startswith("ITEM:"):
             s = s[5:].strip()
         elif s.startswith(("-", "*", "•")):
             s = s[1:].strip()
         elif len(s) > 2 and s[0].isdigit() and s[1] in ".):":
             s = s[2:].strip()
+
+        # Parse key:value pairs from pipe-delimited segments
         parts = {}
-        for p in s.split("|"):
+        segments = s.split("|")
+        for p in segments:
             if ":" in p:
                 k, v = p.split(":", 1)
                 parts[k.strip().upper()] = v.strip()
-        name     = parts.get("ITEM", parts.get("NAME", parts.get("TASK", s.split("|")[0].strip())))
+
+        # Name comes from ITEM/NAME/TASK key, or the first segment if none matched
+        name     = parts.get("ITEM", parts.get("NAME", parts.get("TASK", segments[0].strip())))
         due      = parts.get("DUE",  "unspecified")
         itype    = parts.get("TYPE", "assignment").lower()
         priority = parts.get("PRIORITY", "medium").lower()
+
         if not name or name.lower() in ("none", "n/a", ""):
             continue
         if itype in ("quiz", "test", "exam"):
@@ -480,9 +486,15 @@ def _extract_structure(brief: str, today: str) -> dict:
     return result
 
 
+# ── FIX 1: Duplicate assignment guard ────────────────────────────────────────
+# Before appending new assignments/schedule items extracted from a recording,
+# remove any previously saved entries for the same recording_id.  This prevents
+# duplicates if a recording is ever reprocessed (e.g. after a partial failure).
 def _save_result(result: dict, text: str, recording_id: str, today: str):
     with _lock:
         data = _load_data()
+
+        # Update the recording record
         for rec in data["recordings"]:
             if rec["id"] == recording_id:
                 rec.update({
@@ -496,6 +508,16 @@ def _save_result(result: dict, text: str, recording_id: str, today: str):
                     "status":       "done",
                 })
                 break
+
+        # Remove any stale assignments / schedule items from a previous run
+        # for this recording before inserting the fresh ones.
+        data["assignments"] = [
+            a for a in data["assignments"] if a.get("recording_id") != recording_id
+        ]
+        data["schedule"] = [
+            s for s in data["schedule"] if s.get("recording_id") != recording_id
+        ]
+
         for a in result.get("assignments", []):
             a.update({"id": str(uuid.uuid4()), "recording_id": recording_id,
                       "created": today, "completed": False})
@@ -503,6 +525,7 @@ def _save_result(result: dict, text: str, recording_id: str, today: str):
         for s in result.get("schedule_items", []):
             s.update({"id": str(uuid.uuid4()), "recording_id": recording_id})
             data["schedule"].append(s)
+
         _save_data(data)
     print(f"[AI] Done: '{result.get('title')}' -- "
           f"{len(result.get('notes', []))} note sections, "
@@ -617,7 +640,7 @@ def upload():
     audio_file.save(str(wav_path))
 
     timestamp     = datetime.datetime.now()
-    title         = timestamp.strftime("Recording %b %d, %I:%M %p")
+    title         = timestamp.strftime("Recording %b %-d, %I:%M %p")
 
     duration_secs = 0
     try:
@@ -672,10 +695,13 @@ def upload():
     return jsonify({"id": rec_id, "title": title, "status": "queued"}), 200
 
 
-# -- API routes --------------------------------------------------------
+# ── FIX 2: All read-only route handlers now hold _lock while calling
+# _load_data(), preventing a background write thread from corrupting a
+# concurrent read of the JSON file.
 @app.route("/api/status", methods=["GET"])
 def api_status():
-    data    = _load_data()
+    with _lock:
+        data = _load_data()
     pending = sum(1 for r in data["recordings"] if r.get("status") not in ("done",))
     return jsonify({
         "ok":          True,
@@ -691,12 +717,16 @@ def api_status():
 
 @app.route("/api/recordings", methods=["GET"])
 def get_recordings():
-    return jsonify(_load_data()["recordings"])
+    with _lock:
+        data = _load_data()
+    return jsonify(data["recordings"])
 
 
 @app.route("/api/recordings/<rid>", methods=["GET"])
 def get_recording(rid):
-    for rec in _load_data()["recordings"]:
+    with _lock:
+        data = _load_data()
+    for rec in data["recordings"]:
         if rec["id"] == rid:
             return jsonify(rec)
     return jsonify({"error": "Not found"}), 404
@@ -724,12 +754,14 @@ def delete_recording(rid):
         data = _load_data()
         data["recordings"] = [r for r in data["recordings"] if r["id"] != rid]
         _save_data(data)
-    return jsonify({"ok": True})
+    return jsoniy({"ok": True})
 
 
 @app.route("/api/assignments", methods=["GET"])
 def get_assignments():
-    return jsonify(_load_data()["assignments"])
+    with _lock:
+        data = _load_data()
+    return jsonify(data["assignments"])
 
 
 @app.route("/api/assignments", methods=["POST"])
@@ -791,7 +823,9 @@ def delete_assignment(aid):
 
 @app.route("/api/schedule", methods=["GET"])
 def get_schedule():
-    return jsonify(_load_data()["schedule"])
+    with _lock:
+        data = _load_data()
+    return jsonify(data["schedule"])
 
 
 @app.route("/api/schedule", methods=["POST"])
