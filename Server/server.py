@@ -7,6 +7,7 @@ to extract structured class notes, assignments, schedule items, key terms, and
 action items.
 """
 
+import re as _re
 import json
 import uuid
 import datetime
@@ -231,49 +232,123 @@ SHORT_CUTOFF   = 400
 # This is critical because format:json has been removed from ollama_chat.
 
 SUMMARY_PROMPT = (
-    "Summarise this spoken lecture transcript in {target} words or fewer. "
-    "Focus on: main topics, key concepts, any assignments or deadlines mentioned. "
-    "Write plain prose only. Do not output JSON, bullet points, or markdown.\n\n"
-    "TRANSCRIPT:\n{text}\n\nSUMMARY (plain prose only):"
+    "Summarise this spoken lecture transcript in {target} words or fewer.\n\n"
+    "TWO-PART TASK:\n"
+    "Part 1 -- CONTENT SUMMARY: Write plain English sentences summarising "
+    "the main topics and concepts explained.\n"
+    "Part 2 -- ASSIGNMENTS (copy word-for-word): "
+    "At the end, reproduce verbatim every sentence in which the teacher "
+    "mentions homework, an assignment, a quiz, a test, a worksheet, "
+    "a deadline, something due, or anything students must do or turn in. "
+    "If there are none, write nothing extra.\n\n"
+    "STRICT OUTPUT RULES -- breaking any of these is wrong:\n"
+    "1. Plain English sentences only. No bullet points, no headers, no JSON.\n"
+    "2. NO LaTeX at all. No backslashes. No \\( \\) or \\[ \\] or \\frac or ^ or _.\n"
+    "   Write math in plain words: 'x squared', 'one third', 'f of g of x'.\n"
+    "3. No markdown: no ** or * or __ or # characters.\n\n"
+    "TRANSCRIPT:\n{text}\n\n"
+    "SUMMARY:"
 )
 
 CONDENSE_PROMPT = (
-    "Combine these lecture section summaries into one coherent set of notes, "
-    "250 words or fewer. Keep all key topics, assignments, and dates. "
-    "Write plain prose only. No JSON, no bullet points.\n\n"
-    "SECTIONS:\n{summaries}\n\nCOMBINED NOTES (plain prose only):"
+    "Combine the lecture section summaries below into one coherent set of notes "
+    "in 250 words or fewer. Keep all key topics, assignments, and dates.\n\n"
+    "STRICT OUTPUT RULES:\n"
+    "1. Plain English sentences only. No bullet points, no headers, no JSON.\n"
+    "2. NO LaTeX. No backslashes. No \\( \\) \\frac ^ _. "
+    "Write math in plain words.\n"
+    "3. No markdown: no ** or * or __ or # characters.\n\n"
+    "SECTIONS:\n{summaries}\n\n"
+    "COMBINED NOTES:"
 )
 
 EXTRACT_META_PROMPT = (
-    "Read these lecture notes and answer each question below.\n"
-    "Write each answer on its own line starting with the exact label shown.\n"
-    "Do not use JSON, markdown, or bullet points. Plain text only.\n\n"
+    "Read the lecture notes below. Answer every labelled question.\n"
+    "Write each answer on its own line starting with the EXACT label shown "
+    "(colon included). Do not add any other lines, intro, or explanation.\n\n"
+    "STRICT OUTPUT RULES:\n"
+    "1. Plain English only.\n"
+    "2. NO LaTeX. No backslashes. No \\( \\) \\frac ^ _. "
+    "Spell math out: 'x squared', 'one third', 'f of g of x'.\n"
+    "3. No markdown: no ** * __ # characters.\n\n"
     "NOTES:\n{notes}\n\n"
-    "TITLE: (5 words max describing the lecture topic)\n"
-    "SUBJECT: (one word, e.g. Physics, History, Math, Networking, General)\n"
-    "SUMMARY: (2-3 sentences summarising the lecture)\n"
-    "KEY TERMS: (comma-separated list of important technical terms)\n"
-    "ACTION ITEMS: (comma-separated list of things students must do, or NONE)\n"
-    "\nYour answers:"
+    "TITLE: 5 words max describing the lecture topic\n"
+    "SUBJECT: one word only, e.g. Math or Physics or History or Biology or General\n"
+    "SUMMARY: 2 to 3 plain-English sentences summarising the lecture\n"
+    "KEY TERMS: comma-separated list of important terms from the lecture\n"
+    "ACTION ITEMS: comma-separated list of things students must do, or NONE\n\n"
+    "Your answers (start with TITLE:):"
 )
 
 EXTRACT_NOTES_PROMPT = (
-    "Read these lecture notes. List up to 6 main topics covered.\n"
-    "For each topic write exactly two lines:\n"
-    "HEADING: <topic name>\n"
-    "DETAIL: <one sentence explaining it>\n\n"
-    "Do not write anything else. No JSON, no numbering, no markdown.\n\n"
-    "NOTES:\n{notes}\n\nYour answer:"
+    "Read the lecture notes below. List up to 6 main topics that were actually "
+    "covered in this specific lecture.\n\n"
+    "For each topic output exactly two lines, no other lines:\n"
+    "HEADING: the topic name in plain English\n"
+    "DETAIL: one plain-English sentence explaining what was taught\n\n"
+    "STRICT FORMATTING RULES:\n"
+    "- Plain English only. No LaTeX, no math symbols, no backslashes.\n"
+    "  Spell math out in words: write 'x squared' not 'x^2', "
+    "'one third' not '1/3' or '\\frac{1}{3}'.\n"
+    "- No markdown, no bullet points, no numbering, no JSON.\n"
+    "- You MUST only write about topics found in the NOTES section below. "
+    "Do NOT invent topics.\n\n"
+    "SAMPLE FORMAT (these lines are fake placeholders -- "
+    "DO NOT copy them into your answer):\n"
+    "HEADING: [topic from actual notes goes here]\n"
+    "DETAIL: [one sentence about that topic goes here]\n"
+    "END SAMPLE\n\n"
+    "NOTES:\n{notes}\n\n"
+    "Your answer -- HEADING/DETAIL pairs from the NOTES above only:"
 )
 
+# Assignment extraction prompt.
+# Design decisions:
+#   - Explicit keyword list so the 3b model knows exactly what to scan for.
+#   - Full TYPE vocabulary with detection hints so the model picks correctly.
+#   - Example block clearly labelled and fenced so it is never copied into output.
+#   - "Start with the first ITEM: line" kills preamble chatter.
+#   - Bans LaTeX/markdown in descriptions.
 EXTRACT_ASSIGN_PROMPT = (
-    "Read these lecture notes. Today is {today}.\n"
-    "List any homework, assignments, quizzes, tests, or deadlines mentioned.\n"
-    "For each item write exactly one line in this format:\n"
-    "ITEM: <description> | DUE: <YYYY-MM-DD or unspecified> | TYPE: <assignment or quiz or test or exam> | PRIORITY: <high or medium or low>\n\n"
-    "If nothing is mentioned write exactly: NONE\n"
-    "Do not write anything else. No JSON, no markdown.\n\n"
-    "NOTES:\n{notes}\n\nYour answer:"
+    "You are a student assistant. Scan the transcript below for EVERY task, "
+    "deadline, or graded item the teacher mentions.\n\n"
+    "WHAT TO LOOK FOR -- scan for these words and phrases:\n"
+    "  homework, assignment, due, turn in, submit, hand in, bring in,\n"
+    "  quiz, test, exam, midterm, final, pop quiz,\n"
+    "  worksheet, handout, problem set, practice problems,\n"
+    "  lab, lab report, experiment,\n"
+    "  essay, paper, report, write-up, writing assignment,\n"
+    "  project, presentation, poster, slides,\n"
+    "  reading, read chapter, read pages, textbook pages,\n"
+    "  study, review, practice, complete, finish, do.\n\n"
+    "HOW TO DETECT THE TYPE:\n"
+    "  worksheet  -- teacher says worksheet, handout, or problem set on paper\n"
+    "  quiz       -- short graded test, pop quiz\n"
+    "  test       -- larger graded assessment, unit test, chapter test\n"
+    "  exam       -- exam, midterm, final exam\n"
+    "  lab        -- lab, experiment, lab report\n"
+    "  essay      -- essay, paper, written report, write-up\n"
+    "  project    -- project, presentation, poster, slides\n"
+    "  reading    -- read chapter, read pages, textbook reading\n"
+    "  homework   -- general homework or practice problems\n"
+    "  other      -- anything that does not fit the above\n\n"
+    "Today is {today}. Convert relative dates like 'Friday', 'next Monday', "
+    "'tomorrow' to YYYY-MM-DD. Use unspecified if no date is given.\n\n"
+    "OUTPUT RULES:\n"
+    "- Output one line per item using EXACTLY this format:\n"
+    "  ITEM: <description> | DUE: <YYYY-MM-DD or unspecified> | "
+    "TYPE: <type from the list above> | PRIORITY: <high or medium or low>\n"
+    "- Start your answer with the first ITEM: line. No intro sentence, no summary.\n"
+    "- Plain English descriptions only. No LaTeX, no backslashes, no markdown.\n"
+    "- If there are truly zero tasks or deadlines, output exactly: NONE\n\n"
+    "IMPORTANT: The lines below are the FORMAT TEMPLATE only -- "
+    "they show the structure, not real content. "
+    "Do NOT copy them into your answer.\n"
+    "  ITEM: [description of task from transcript] | DUE: [date or unspecified] | "
+    "TYPE: [type] | PRIORITY: [priority]\n"
+    "END TEMPLATE\n\n"
+    "TRANSCRIPT:\n{transcript}\n\n"
+    "Your answer -- ITEM lines extracted from the TRANSCRIPT above only:"
 )
 
 
@@ -407,59 +482,206 @@ def _parse_notes_sections(raw: str) -> list:
     return notes[:6]
 
 
+# Types that belong on the schedule (timed events) vs the assignment list
+_SCHEDULE_TYPES = {"quiz", "test", "exam", "midterm", "final"}
+
+# Full set of recognised assignment types (everything not in _SCHEDULE_TYPES)
+_ASSIGNMENT_TYPES = {
+    "homework", "worksheet", "lab", "essay", "paper",
+    "project", "presentation", "reading", "report", "other",
+}
+
+# Keyword → TYPE mapping for fuzzy fallback when the model omits TYPE
+_TYPE_KEYWORDS = [
+    ({"worksheet"},                          "worksheet"),
+    ({"lab", "laboratory", "lab report"},    "lab"),
+    ({"essay"},                              "essay"),
+    ({"paper", "write-up", "writeup"},       "paper"),
+    ({"presentation", "present", "poster"},  "presentation"),
+    ({"project"},                            "project"),
+    ({"reading", "read", "chapter", "pages", "textbook"}, "reading"),
+    ({"quiz"},                               "quiz"),
+    ({"test"},                               "test"),
+    ({"exam", "midterm", "final"},           "exam"),
+    ({"homework", "hw", "problem set", "pset"}, "homework"),
+]
+
+
+def _infer_type(text: str) -> str:
+    """Guess assignment type from the task description when model omits it."""
+    lower = text.lower()
+    for keywords, t in _TYPE_KEYWORDS:
+        if any(kw in lower for kw in keywords):
+            return t
+    return "homework"
+
+
 def _parse_assignments(raw: str, today: str) -> tuple:
     assignments, schedule_items = [], []
-    if not raw or raw.strip().upper() in ("NONE", "{}", ""):
+    if not raw:
         return assignments, schedule_items
+
+    # Entire response is just NONE
+    if raw.strip().upper() == "NONE":
+        print("[AI] Assignment extraction returned NONE")
+        return assignments, schedule_items
+
     for line in raw.strip().splitlines():
         s = line.strip()
-        if not s or s.upper() == "NONE" or s.startswith("{"):
+
+        # Skip blank lines and bare NONE
+        if not s or s.upper() == "NONE":
             continue
 
-        # Strip common list prefixes before parsing pipes
-        if s.upper().startswith("ITEM:"):
-            s = s[5:].strip()
-        elif s.startswith(("-", "*", "•")):
-            s = s[1:].strip()
-        elif len(s) > 2 and s[0].isdigit() and s[1] in ".):":
-            s = s[2:].strip()
+        # Skip obvious preamble lines the model sometimes adds
+        # (e.g. "Here are the assignments I found:")
+        su = s.upper()
+        if not su.startswith("ITEM:") and "|" not in s:
+            print(f"[AI] Skipping non-ITEM line: {s[:80]}")
+            continue
 
-        # Parse key:value pairs from pipe-delimited segments
-        parts = {}
-        segments = s.split("|")
-        for p in segments:
-            if ":" in p:
-                k, v = p.split(":", 1)
+        # Strip ITEM: prefix — we want just the payload
+        if su.startswith("ITEM:"):
+            s = s[5:].strip()
+
+        # Split on pipes into segments, then build a key→value dict
+        # from any segment that contains a colon.
+        segments = [seg.strip() for seg in s.split("|")]
+        parts: dict = {}
+        for seg in segments:
+            if ":" in seg:
+                k, v = seg.split(":", 1)
                 parts[k.strip().upper()] = v.strip()
 
-        # Name comes from ITEM/NAME/TASK key, or the first segment if none matched
-        name     = parts.get("ITEM", parts.get("NAME", parts.get("TASK", segments[0].strip())))
-        due      = parts.get("DUE",  "unspecified")
-        itype    = parts.get("TYPE", "assignment").lower()
-        priority = parts.get("PRIORITY", "medium").lower()
+        # The task description is ALWAYS the first segment (before the
+        # first pipe), now that ITEM: has already been stripped.
+        name = segments[0].strip() if segments else ""
 
+        # Clean junk from name (model sometimes leaves a stray key prefix)
+        for junk in ("ITEM:", "NAME:", "TASK:"):
+            if name.upper().startswith(junk):
+                name = name[len(junk):].strip()
+
+        due      = parts.get("DUE", "unspecified").strip()
+        itype    = parts.get("TYPE", "").strip().lower()
+        priority = parts.get("PRIORITY", "medium").strip().lower()
+
+        # Validate / sanitise
         if not name or name.lower() in ("none", "n/a", ""):
+            print(f"[AI] Skipping empty assignment name from line: {s[:80]}")
             continue
-        if itype in ("quiz", "test", "exam"):
+        if priority not in ("high", "medium", "low"):
+            priority = "medium"
+
+        # If the model gave an unrecognised type, infer from description
+        all_known = _SCHEDULE_TYPES | _ASSIGNMENT_TYPES
+        if itype not in all_known:
+            itype = _infer_type(name)
+
+        print(f"[AI] Parsed assignment: name={name!r} due={due!r} type={itype!r} pri={priority!r}")
+
+        if itype in _SCHEDULE_TYPES:
             schedule_items.append({
                 "event": name,
-                "date":  due if due != "unspecified" else "unspecified",
+                "date":  due,
                 "time":  "unspecified",
-                "type":  itype
+                "type":  itype,
             })
         else:
             assignments.append({
                 "task":     name,
                 "due_date": due,
-                "priority": priority if priority in ("high", "medium", "low") else "medium",
+                "priority": priority,
                 "details":  "",
-                "type":     "assignment"
+                "type":     itype,
             })
+
     return assignments, schedule_items
 
 
-def _extract_structure(brief: str, today: str) -> dict:
-    """Pass 3: multi-prompt plain-text extraction."""
+# ---------------------------------------------------------------------------
+# LaTeX / markdown sanitiser
+# ---------------------------------------------------------------------------
+# The 3b model sometimes ignores "no LaTeX" instructions.  We scrub the most
+# common patterns from every text field before saving so the frontend always
+# receives clean human-readable strings.
+
+_LATEX_SUBS = [
+    # Inline math delimiters  \( ... \)  and  \[ ... \]
+    (_re.compile(r"\\\((.+?)\\\)", _re.S),  r"\1"),
+    (_re.compile(r"\\\[(.+?)\\\]", _re.S),  r"\1"),
+    # Dollar-sign math  $...$
+    (_re.compile(r"\$\$(.+?)\$\$", _re.S),  r"\1"),
+    (_re.compile(r"\$(.+?)\$"),              r"\1"),
+    # \frac{a}{b}  →  a/b
+    (_re.compile(r"\\frac\{([^}]+)\}\{([^}]+)\}"), r"\1/\2"),
+    # \text{...}  →  ...
+    (_re.compile(r"\\text\{([^}]+)\}"),      r"\1"),
+    # Generic \command{...}  →  ...
+    (_re.compile(r"\\[a-zA-Z]+\{([^}]*)\}"), r"\1"),
+    # Lone backslash-commands like \cdot \times \to \rightarrow etc.
+    (_re.compile(r"\\[a-zA-Z]+"),            " "),
+    # Superscript ^ and subscript _  (only when inside likely math context)
+    (_re.compile(r"\^(\{[^}]+\}|\w)"),       r" to the power of \1"),
+    (_re.compile(r"_(\{[^}]+\}|\w)"),        r" sub \1"),
+    # Remove curly braces left over
+    (_re.compile(r"[{}]"),                   ""),
+    # Collapse multiple spaces
+    (_re.compile(r"  +"),                    " "),
+]
+
+# Markdown bold/italic we also strip from prose fields
+_MD_SUBS = [
+    (_re.compile(r"\*\*(.+?)\*\*"), r"\1"),   # **bold**
+    (_re.compile(r"\*(.+?)\*"),     r"\1"),   # *italic*
+    (_re.compile(r"__(.+?)__"),     r"\1"),   # __bold__
+    (_re.compile(r"_(.+?)_"),       r"\1"),   # _italic_
+    (_re.compile(r"`(.+?)`"),       r"\1"),   # `code`
+]
+
+
+def _clean(text: str) -> str:
+    """Strip LaTeX and markdown formatting from a plain-text string."""
+    if not text:
+        return text
+    for pattern, repl in _LATEX_SUBS:
+        text = pattern.sub(repl, text)
+    for pattern, repl in _MD_SUBS:
+        text = pattern.sub(repl, text)
+    return text.strip()
+
+
+def _clean_result(result: dict) -> dict:
+    """Apply _clean() to every human-visible text field in an extracted result."""
+    result["title"]   = _clean(result.get("title",   ""))
+    result["subject"] = _clean(result.get("subject", ""))
+    result["summary"] = _clean(result.get("summary", ""))
+    result["key_terms"]    = [_clean(t) for t in result.get("key_terms",    [])]
+    result["action_items"] = [_clean(t) for t in result.get("action_items", [])]
+    result["notes"] = [
+        {"heading": _clean(n.get("heading", "")),
+         "content": _clean(n.get("content", ""))}
+        for n in result.get("notes", [])
+    ]
+    for a in result.get("assignments", []):
+        a["task"]    = _clean(a.get("task",    ""))
+        a["details"] = _clean(a.get("details", ""))
+    for s in result.get("schedule_items", []):
+        s["event"] = _clean(s.get("event", ""))
+    return result
+
+
+# ---------------------------------------------------------------------------
+
+def _extract_structure(brief: str, original_transcript: str, today: str) -> dict:
+    """
+    Pass 3: multi-prompt plain-text extraction.
+
+    notes/meta are extracted from `brief` (the condensed summary).
+    Assignments are extracted from `original_transcript` so that
+    casually-mentioned deadlines are never lost in summarisation.
+    All text fields are sanitised with _clean_result() before returning.
+    """
     # 3a: meta fields
     meta_raw = _call(EXTRACT_META_PROMPT.replace("{notes}", brief), "extract meta")
     print(f"[AI] Meta raw:\n{meta_raw[:400]}\n---")
@@ -470,9 +692,13 @@ def _extract_structure(brief: str, today: str) -> dict:
     print(f"[AI] Notes raw:\n{notes_raw[:400]}\n---")
     result["notes"] = _parse_notes_sections(notes_raw)
 
-    # 3c: assignments / schedule items
+    # 3c: assignments / schedule items -- run against the FULL transcript
+    # (capped to CHUNK_SIZE to avoid timeouts on very long recordings)
+    transcript_for_assign = original_transcript[:CHUNK_SIZE]
     assign_raw = _call(
-        EXTRACT_ASSIGN_PROMPT.replace("{notes}", brief).replace("{today}", today),
+        EXTRACT_ASSIGN_PROMPT
+            .replace("{transcript}", transcript_for_assign)
+            .replace("{today}", today),
         "extract assignments"
     )
     print(f"[AI] Assignments raw:\n{assign_raw[:400]}\n---")
@@ -480,13 +706,16 @@ def _extract_structure(brief: str, today: str) -> dict:
     result["assignments"]    = assignments
     result["schedule_items"] = schedule_items
 
+    # Strip any LaTeX / markdown that slipped through despite prompt instructions
+    result = _clean_result(result)
+
     print(f"[AI] Extracted: title={result.get('title')!r}, "
           f"{len(result['notes'])} notes, {len(assignments)} assignments, "
           f"{len(result.get('key_terms', []))} terms")
     return result
 
 
-# ── FIX 1: Duplicate assignment guard ────────────────────────────────────────
+# ── Duplicate assignment guard ────────────────────────────────────────────────
 # Before appending new assignments/schedule items extracted from a recording,
 # remove any previously saved entries for the same recording_id.  This prevents
 # duplicates if a recording is ever reprocessed (e.g. after a partial failure).
@@ -529,7 +758,8 @@ def _save_result(result: dict, text: str, recording_id: str, today: str):
         _save_data(data)
     print(f"[AI] Done: '{result.get('title')}' -- "
           f"{len(result.get('notes', []))} note sections, "
-          f"{len(result.get('key_terms', []))} key terms")
+          f"{len(result.get('key_terms', []))} key terms, "
+          f"{len(result.get('assignments', []))} assignments")
 
 
 def process_recording(transcript: str, recording_id: str):
@@ -571,10 +801,10 @@ def _process_recording_inner(transcript: str, recording_id: str):
 
     if chars <= SHORT_CUTOFF:
         print("[AI] Tiny transcript -- extracting structure directly")
-        result = _extract_structure(text, today)
+        result = _extract_structure(text, text, today)
         if not result.get("title"):   result["title"]   = f"Recording {recording_id[:8]}"
         if not result.get("subject"): result["subject"] = "General"
-        if not result.get("summary"): result["summary"] = text[:300]
+        if not result.get("summary"): result["summary"] = _clean(text[:300])
         _save_result(result, text, recording_id, today)
         return
 
@@ -586,10 +816,12 @@ def _process_recording_inner(transcript: str, recording_id: str):
         brief = _call(prompt, "summarise full transcript")
         if not brief:
             brief = text[:2000]
-        result = _extract_structure(brief, today)
+        # FIX: pass original `text` as second arg so assignments are pulled
+        # from the full transcript, not just the condensed brief.
+        result = _extract_structure(brief, text, today)
         if not result.get("title"):   result["title"]   = f"Recording {recording_id[:8]}"
         if not result.get("subject"): result["subject"] = "General"
-        if not result.get("summary"): result["summary"] = brief[:300]
+        if not result.get("summary"): result["summary"] = _clean(brief[:300])
         _save_result(result, text, recording_id, today)
         return
 
@@ -613,11 +845,13 @@ def _process_recording_inner(transcript: str, recording_id: str):
 
     brief = _condense(summaries)
     print(f"[AI] Brief after condensing: {len(brief):,} chars")
-    result = _extract_structure(brief, today)
+    # FIX: pass original `text` as second arg so assignments are pulled
+    # from the full transcript, not just the condensed brief.
+    result = _extract_structure(brief, text, today)
 
     if not result.get("title"):   result["title"]   = f"Recording {recording_id[:8]}"
     if not result.get("subject"): result["subject"] = "General"
-    if not result.get("summary"): result["summary"] = summaries[0][:300] + "..."
+    if not result.get("summary"): result["summary"] = _clean(summaries[0][:300]) + "..."
 
     _save_result(result, text, recording_id, today)
 
@@ -695,9 +929,6 @@ def upload():
     return jsonify({"id": rec_id, "title": title, "status": "queued"}), 200
 
 
-# ── FIX 2: All read-only route handlers now hold _lock while calling
-# _load_data(), preventing a background write thread from corrupting a
-# concurrent read of the JSON file.
 @app.route("/api/status", methods=["GET"])
 def api_status():
     with _lock:
@@ -753,8 +984,11 @@ def delete_recording(rid):
     with _lock:
         data = _load_data()
         data["recordings"] = [r for r in data["recordings"] if r["id"] != rid]
+        # FIX: also clean up orphaned assignments and schedule items
+        data["assignments"] = [a for a in data["assignments"] if a.get("recording_id") != rid]
+        data["schedule"]    = [s for s in data["schedule"]    if s.get("recording_id") != rid]
         _save_data(data)
-    return jsoniy({"ok": True})
+    return jsonify({"ok": True})  # FIX: was `jsoniy` (typo → NameError crash)
 
 
 @app.route("/api/assignments", methods=["GET"])
