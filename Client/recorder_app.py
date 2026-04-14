@@ -47,7 +47,7 @@ SOFT_KNEE_THRESHOLD     = 0.65
 NORMALIZE_WAV           = True
 
 # ── Server upload config ───────────────────────────────────────────────────────
-SERVER_URL          = "http://18.219.159.74:5000"
+SERVER_URL          = "server-ip-here"
 SERVER_UPLOAD_ENABLED = True
 SERVER_TIMEOUT      = 30
 
